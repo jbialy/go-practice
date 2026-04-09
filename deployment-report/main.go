@@ -6,7 +6,6 @@ import (
 	"log"
 	"math"
 	"os"
-	"strings"
 )
 
 const sampleEvents = `[
@@ -33,6 +32,8 @@ type DeploymentStats struct {
 	SuccessCount     int     `json:"success_count"`
 	FailureCount     int     `json:"failure_count"`
 	AvgDuration      float64 `json:"avg_duration"`
+	Namespace        string  `json:"namespace"`
+	Deployed_by      string  `json:"deployed_by"`
 	TotalDuration    float64 `json:"-"`
 }
 
@@ -50,6 +51,9 @@ func aggregateServiceStats(events []DeploymentEvent) map[string]*DeploymentStats
 			stats[event.Service].FailureCount++
 		}
 		stats[event.Service].TotalDuration += float64(event.Duration_seconds)
+		// add more metadata from the event
+		stats[event.Service].Deployed_by = event.Deployed_by
+		stats[event.Service].Namespace = event.Namespace
 	}
 
 	// compute average duration per service in DeploymentStats
@@ -72,9 +76,18 @@ func main() {
 	// decoder is a json decoder used for reading in data
 	var decoder *json.Decoder
 
-	// check for piped input on stdin
-	if info.Mode()&os.ModeCharDevice != 0 {
-		decoder = json.NewDecoder(strings.NewReader(sampleEvents))
+	if len(os.Args) > 1 {
+		file, err := os.Open(os.Args[1])
+		if err != nil {
+			log.Fatalf("Error opening input file: %v", err)
+		}
+		defer file.Close()
+		decoder = json.NewDecoder(file)
+	} else if info.Mode()&os.ModeCharDevice != 0 {
+		// no data piped in
+		fmt.Printf("Usage:\tcat events.json | go run main.go\n")
+		fmt.Printf("or...\tgo run main.go events.json\n")
+		os.Exit(1)
 	} else {
 		decoder = json.NewDecoder(os.Stdin)
 	}
@@ -85,9 +98,20 @@ func main() {
 
 	serviceStats := aggregateServiceStats(events)
 
-	jsonOutput, err := json.Marshal(serviceStats)
-	fmt.Printf("%s\n", jsonOutput)
+	for service, stats := range serviceStats {
+		fmt.Printf("Service: %s, Total Deployments: %d, Successes: %d, Failures: %d, Average Duration: %.1f seconds. In namespace %s, deployed by %s.\n", service, stats.TotalDeployments, stats.SuccessCount, stats.FailureCount, stats.AvgDuration, stats.Namespace, stats.Deployed_by)
+	}
 
-	os.Exit(0)
+	slowestService := ""
 
+	for service, stats := range serviceStats {
+		if slowestService == "" {
+			slowestService = service
+		}
+		if stats.AvgDuration < serviceStats[slowestService].AvgDuration {
+			slowestService = service
+		}
+	}
+
+	fmt.Printf("Slowest service: %s with average duration %.1f seconds. In namespace %s, deployed by %s.\n", slowestService, serviceStats[slowestService].AvgDuration, serviceStats[slowestService].Namespace, serviceStats[slowestService].Deployed_by)
 }
