@@ -44,10 +44,11 @@ func aggregateServiceStats(events []DeploymentEvent) map[string]*DeploymentStats
 			stats[event.Service] = &DeploymentStats{}
 		}
 		stats[event.Service].TotalDeployments++
-		if event.Status == "success" {
+
+		switch event.Status {
+		case "success":
 			stats[event.Service].SuccessCount++
-		}
-		if event.Status == "failure" {
+		case "failure":
 			stats[event.Service].FailureCount++
 		}
 		stats[event.Service].TotalDuration += float64(event.Duration_seconds)
