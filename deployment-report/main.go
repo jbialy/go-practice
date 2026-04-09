@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 )
 
 const sampleEvents = `[
@@ -63,9 +64,23 @@ func aggregateServiceStats(events []DeploymentEvent) map[string]*DeploymentStats
 func main() {
 
 	var events []DeploymentEvent
-	err := json.Unmarshal([]byte(sampleEvents), &events)
+
+	info, err := os.Stdin.Stat()
 	if err != nil {
-		log.Fatalf("Error parsing events: %v", err)
+		log.Fatalf("Error checking standard input: %v", err)
+	}
+	// decoder is a json decoder used for reading in data
+	var decoder *json.Decoder
+
+	// check for piped input on stdin
+	if info.Mode()&os.ModeCharDevice != 0 {
+		decoder = json.NewDecoder(strings.NewReader(sampleEvents))
+	} else {
+		decoder = json.NewDecoder(os.Stdin)
+	}
+
+	if err = decoder.Decode(&events); err != nil {
+		log.Fatalf("Error decoding JSON input: %v", err)
 	}
 
 	serviceStats := aggregateServiceStats(events)
