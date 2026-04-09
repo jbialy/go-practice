@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"os"
 )
 
@@ -31,6 +32,7 @@ type DeploymentStats struct {
 	SuccessCount     int     `json:"success_count"`
 	FailureCount     int     `json:"failure_count"`
 	AvgDuration      float64 `json:"avg_duration"`
+	TotalDuration    float64 `json:"-"`
 }
 
 func aggregateServiceStats(events []DeploymentEvent) map[string]*DeploymentStats {
@@ -40,6 +42,19 @@ func aggregateServiceStats(events []DeploymentEvent) map[string]*DeploymentStats
 			stats[event.Service] = &DeploymentStats{}
 		}
 		stats[event.Service].TotalDeployments++
+		if event.Status == "success" {
+			stats[event.Service].SuccessCount++
+		}
+		if event.Status == "failure" {
+			stats[event.Service].FailureCount++
+		}
+		stats[event.Service].TotalDuration += float64(event.Duration_seconds)
+	}
+
+	// compute average duration per service in DeploymentStats
+	for _, s := range stats {
+		s.AvgDuration = math.Round(s.TotalDuration/float64(s.TotalDeployments)*10) / 10
+
 	}
 
 	return stats
