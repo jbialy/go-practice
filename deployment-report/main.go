@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
 	"os"
 )
 
-const sampleEvent = `[
+const sampleEvents = `[
   { "service": "api-gateway", "namespace": "production", "status": "success", "duration_seconds": 42, "deployed_by": "alice" },
   { "service": "auth-service", "namespace": "production", "status": "failure", "duration_seconds": 130, "deployed_by": "bob" },
   { "service": "api-gateway", "namespace": "staging", "status": "success", "duration_seconds": 18, "deployed_by": "alice" },
@@ -15,7 +18,7 @@ const sampleEvent = `[
   { "service": "auth-service", "namespace": "production", "status": "success", "duration_seconds": 75, "deployed_by": "alice" }
 ]`
 
-type deploymentEvent struct {
+type DeploymentEvent struct {
 	Service          string `json:"service"`
 	Namespace        string `json:"namespace"`
 	Status           string `json:"status"`
@@ -23,7 +26,37 @@ type deploymentEvent struct {
 	Deployed_by      string `json:"deployed_by"`
 }
 
+type DeploymentStats struct {
+	TotalDeployments int     `json:"total_deployments"`
+	SuccessCount     int     `json:"success_count"`
+	FailureCount     int     `json:"failure_count"`
+	AvgDuration      float64 `json:"avg_duration"`
+}
+
+func aggregateServiceStats(events []DeploymentEvent) map[string]*DeploymentStats {
+	stats := map[string]*DeploymentStats{}
+	for _, event := range events {
+		if stats[event.Service] == nil {
+			stats[event.Service] = &DeploymentStats{}
+		}
+		stats[event.Service].TotalDeployments++
+	}
+
+	return stats
+}
+
 func main() {
+
+	var events []DeploymentEvent
+	err := json.Unmarshal([]byte(sampleEvents), &events)
+	if err != nil {
+		log.Fatalf("Error parsing events: %v", err)
+	}
+
+	serviceStats := aggregateServiceStats(events)
+
+	jsonOutput, err := json.Marshal(serviceStats)
+	fmt.Printf("%s\n", jsonOutput)
 
 	os.Exit(0)
 
