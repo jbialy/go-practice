@@ -1,0 +1,12 @@
+[
+  { "service": "api-gateway", "status": "healthy" },
+  { "service": "auth-service", "status": "unhealthy" },
+  { "service": "api-gateway", "status": "healthy" },
+  { "service": "payment-service", "status": "healthy" },
+  { "service": "auth-service", "status": "healthy" },
+  { "service": "auth-service", "status": "unhealthy" },
+  { "service": "payment-service", "status": "unhealthy" },
+  { "service": "api-gateway", "status": "healthy" },
+  { "service": "payment-service", "status": "healthy" },
+  { "service": "auth-service", "status": "unhealthy" }
+]
