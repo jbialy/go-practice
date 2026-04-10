@@ -1,0 +1,30 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: health-checker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: health-checker
+  template:
+    metadata:
+      labels:
+        app: health-checker
+    spec:
+      containers:
+      - name: health-checker
+        image: servicehealthchecker:latest
+        imagePullPolicy: IfNotPresent
+        command: ["/app/myapp"]
+        args: ["/data/data.json"]
+        volumeMounts:
+        - name: health-data
+          mountPath: /data/data.json
+          subPath: data.json
+          readOnly: true
+      volumes:
+      - name: health-data
+        configMap:
+          name: health-data
