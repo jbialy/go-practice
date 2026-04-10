@@ -20,8 +20,6 @@ type DeploymentStats struct {
 	SuccessCount     int     `json:"success_count"`
 	FailureCount     int     `json:"failure_count"`
 	AvgDuration      float64 `json:"avg_duration"`
-	Namespace        string  `json:"namespace"`
-	DeployedBy       string  `json:"deployed_by"`
 	TotalDuration    float64 `json:"-"`
 }
 
@@ -40,9 +38,6 @@ func aggregateServiceStats(events []DeploymentEvent) map[string]*DeploymentStats
 			stats[event.Service].FailureCount++
 		}
 		stats[event.Service].TotalDuration += float64(event.Duration)
-		// add more metadata from the event
-		stats[event.Service].DeployedBy = event.DeployedBy
-		stats[event.Service].Namespace = event.Namespace
 	}
 
 	// compute average duration per service in DeploymentStats
@@ -87,8 +82,8 @@ func main() {
 	serviceStats := aggregateServiceStats(events)
 
 	for service, stats := range serviceStats {
-		fmt.Printf("Service: %s, Total Deployments: %d, Successes: %d, Failures: %d, Average Duration: %.1f seconds. In namespace %s, deployed by %s.\n",
-			service, stats.TotalDeployments, stats.SuccessCount, stats.FailureCount, stats.AvgDuration, stats.Namespace, stats.DeployedBy)
+		fmt.Printf("Service: %s, Total Deployments: %d, Successes: %d, Failures: %d, Average Duration: %.1f seconds.\n",
+			service, stats.TotalDeployments, stats.SuccessCount, stats.FailureCount, stats.AvgDuration)
 	}
 
 	slowestService := ""
