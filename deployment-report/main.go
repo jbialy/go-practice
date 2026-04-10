@@ -86,17 +86,14 @@ func main() {
 			service, stats.TotalDeployments, stats.SuccessCount, stats.FailureCount, stats.AvgDuration)
 	}
 
-	slowestService := ""
-
-	for service, stats := range serviceStats {
-		if slowestService == "" {
-			slowestService = service
-		}
-		if stats.AvgDuration > serviceStats[slowestService].AvgDuration {
-			slowestService = service
+	// assume first event is the slowest
+	slowestDeployment := events[0]
+	for _, event := range events[1:] {
+		if event.Duration > slowestDeployment.Duration {
+			slowestDeployment = event
 		}
 	}
 
-	fmt.Printf("\nSlowest service: %s with average duration %.1f seconds. In namespace %s, deployed by %s.\n",
-		slowestService, serviceStats[slowestService].AvgDuration, serviceStats[slowestService].Namespace, serviceStats[slowestService].DeployedBy)
+	fmt.Printf("\nSlowest deployment: %s with duration %d seconds. In namespace %s, deployed by %s.\n",
+		slowestDeployment.Service, slowestDeployment.Duration, slowestDeployment.Namespace, slowestDeployment.DeployedBy)
 }
